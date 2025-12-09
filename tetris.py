@@ -62,15 +62,15 @@ class GameConfig:
         "L": [[0, 0, 1], [1, 1, 1]],
     }
 
-    # Tetromino colors
+    # Tetromino colors (defined inline to avoid forward reference issues)
     COLORS = {
-        "I": CYAN,
-        "O": YELLOW,
-        "T": PURPLE,
-        "S": GREEN,
-        "Z": RED,
-        "J": BLUE,
-        "L": ORANGE,
+        "I": (0, 255, 255),  # CYAN
+        "O": (255, 255, 0),  # YELLOW
+        "T": (128, 0, 128),  # PURPLE
+        "S": (0, 255, 0),  # GREEN
+        "Z": (255, 0, 0),  # RED
+        "J": (0, 0, 255),  # BLUE
+        "L": (255, 165, 0),  # ORANGE
     }
 
 

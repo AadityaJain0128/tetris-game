@@ -243,6 +243,14 @@ class Tetromino:
     """Represents a Tetris piece"""
 
     def __init__(self, shape_type: str, config=None):
+        """
+        Initialize a Tetromino.
+
+        Args:
+            shape_type: Type of tetromino ("I", "O", "T", "S", "Z", "J", "L")
+            config: Configuration class (not instance) to use. Defaults to GameConfig.
+                   Using a class allows for easy subclassing and attribute access.
+        """
         if config is None:
             config = GameConfig
         self.type = shape_type
@@ -282,6 +290,16 @@ class TetrisGame:
     """Main game class"""
 
     def __init__(self, config=None):
+        """
+        Initialize the Tetris game.
+
+        Args:
+            config: Configuration class (not instance) to use. Defaults to GameConfig.
+                   Using a class allows for easy subclassing and attribute access.
+                   Example:
+                       game = TetrisGame()  # Use default config
+                       game = TetrisGame(CustomConfig)  # Use custom config class
+        """
         if config is None:
             config = GameConfig
         self.config = config

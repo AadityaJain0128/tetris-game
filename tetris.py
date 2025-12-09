@@ -13,7 +13,27 @@ pygame.init()
 
 
 class GameConfig:  # pylint: disable=too-few-public-methods
-    """Centralized game configuration"""
+    """
+    Central configuration for screen, grid, gameplay timings and colors.
+    Attributes:
+    SCREEN_WIDTH: Width of window in pixels.
+    SCREEN_HEIGHT: Height of window in pixels.
+    BLOCK_SIZE: Pixel size of each grid cell.
+    GRID_X: X offset for drawing grid.
+    GRID_Y: Y offset for drawing grid.
+    GRID_WIDTH: Width of the Tetris grid in cells.
+    GRID_HEIGHT: Height of the Tetris grid in cells.
+    INITIAL_FALL_SPEED: Milliseconds between automatic piece drops.
+    CLEAR_ANIMATION_DURATION: Duration of line clear fade animation.
+    LEVEL_SPEED_DECREASE: Speed increase per level.
+    MIN_FALL_SPEED: Minimum allowed fall speed.
+    LINE_SCORES: Points awarded for clearing 1–4 lines.
+    SOFT_DROP_BONUS: Points per cell when soft dropping.
+    HARD_DROP_BONUS: Points per cell when hard dropping.
+    LINES_PER_LEVEL: Lines needed to level up.
+    SHAPES: Binary matrices for every Tetromino.
+    COLORS: RGB colors for each Tetromino type.
+    """
 
     # Display settings
     SCREEN_WIDTH = 800
@@ -100,23 +120,33 @@ COLORS = GameConfig.COLORS
 
 
 class GameState:
-    """Base class for game states"""
+    """
+    Base class for representing a game state.
+    Methods are overridden by specific states.
+    """
 
-    def handle_input(self, event, game):
-        """Handle input events for this state"""
+    def handle_input(self, event: pygame.event.Event, game: "TetrisGame") -> None:
+        """Handle keyboard input for this state."""
 
-    def update(self, delta_time, game):
-        """Update game logic for this state"""
+    def update(self, delta_time: int, game: "TetrisGame") -> None:
+        """
+        Update the logic of the state.
+        Args:
+        delta_time: Milliseconds since last frame.
+        """
 
-    def draw(self, game):
-        """Draw additional state-specific elements"""
+    def draw(self, game: "TetrisGame") -> None:
+        """Draw additional UI elements for this state if needed."""
 
 
 class PlayingState(GameState):
-    """Active gameplay state"""
+    """State representing active gameplay."""
 
-    def handle_input(self, event, game):
-        """Handle input during active gameplay"""
+    def handle_input(self, event: pygame.event.Event, game: "TetrisGame") -> None:
+        """
+        Process input while playing.
+        Supports movement, rotation, drops, hold piece, pause and ghost toggle.
+        """
         if event.key == pygame.K_LEFT:
             game.move_piece(-1, 0)
         elif event.key == pygame.K_RIGHT:
@@ -135,8 +165,8 @@ class PlayingState(GameState):
         elif event.key == pygame.K_p:
             game.state = PausedState()
 
-    def update(self, delta_time, game):
-        """Update active gameplay"""
+    def update(self, delta_time: int, game: "TetrisGame") -> None:
+        """Auto-drop piece and lock it if movement fails."""
         # Auto-fall
         game.fall_time += delta_time
         if game.fall_time >= game.fall_speed:
@@ -144,23 +174,23 @@ class PlayingState(GameState):
             if not game.move_piece(0, 1):
                 game.lock_piece()
 
-    def draw(self, game):
+    def draw(self, game: "TetrisGame") -> None:
         """No additional drawing needed for playing state"""
 
 
 class PausedState(GameState):
-    """Game paused state"""
+    """State representing pause menu."""
 
-    def handle_input(self, event, game):
-        """Handle input while paused"""
+    def handle_input(self, event: pygame.event.Event, game: "TetrisGame") -> None:
+        """Unpause when pressing P."""
         if event.key == pygame.K_p:
             game.state = PlayingState()
 
-    def update(self, delta_time, game):
+    def update(self, delta_time: int, game: "TetrisGame") -> None:
         """No updates while paused"""
 
-    def draw(self, game):
-        """Draw pause overlay"""
+    def draw(self, game: "TetrisGame") -> None:
+        """Draw semi-transparent pause overlay with text."""
         overlay = pygame.Surface((game.config.SCREEN_WIDTH, game.config.SCREEN_HEIGHT))
         overlay.set_alpha(180)
         overlay.fill(game.config.BLACK)
@@ -180,36 +210,36 @@ class PausedState(GameState):
 
 
 class LineClearingState(GameState):
-    """Line clearing animation state"""
+    """State representing line-clearing fade animation."""
 
-    def handle_input(self, event, game):
+    def handle_input(self, event: pygame.event.Event, game: "TetrisGame") -> None:
         """No input handling during line clearing"""
 
-    def update(self, delta_time, game):
-        """Update line clearing animation"""
+    def update(self, delta_time: int, game: "TetrisGame") -> None:
+        """Update fade animation progress and complete when time is up."""
         game.clear_animation_time += delta_time
         if game.clear_animation_time >= game.clear_animation_duration:
             game.finish_clearing_animation()
             game.state = PlayingState()
 
-    def draw(self, game):
+    def draw(self, game: "TetrisGame") -> None:
         """No additional drawing needed - animation handled in draw_grid"""
 
 
 class GameOverState(GameState):
-    """Game over state"""
+    """State shown after a losing position occurs."""
 
-    def handle_input(self, event, game):
-        """Handle input in game over state"""
+    def handle_input(self, event: pygame.event.Event, game: "TetrisGame") -> None:
+        """Restart game when pressing R."""
         if event.key == pygame.K_r:
             game.reset_game()
             game.state = PlayingState()
 
-    def update(self, delta_time, game):
+    def update(self, delta_time: int, game: "TetrisGame") -> None:
         """No updates in game over state"""
 
-    def draw(self, game):
-        """Draw game over overlay"""
+    def draw(self, game: "TetrisGame") -> None:
+        """Show game over overlay and final score."""
         overlay = pygame.Surface((game.config.SCREEN_WIDTH, game.config.SCREEN_HEIGHT))
         overlay.set_alpha(200)
         overlay.fill(game.config.BLACK)
@@ -234,9 +264,17 @@ class GameOverState(GameState):
 
 
 class Tetromino:
-    """Represents a Tetris piece"""
+    """
+    Represents a falling Tetris piece and its rotation matrix.
+    Attributes:
+    type: String key like "I", "O", etc.
+    shape: 2D list defining block cells.
+    color: RGB tuple.
+    x: Grid X coordinate (integer cell index).
+    y: Grid Y coordinate.
+    """
 
-    def __init__(self, shape_type: str, config=None):
+    def __init__(self, shape_type: str, config: Optional[type] = None) -> None:
         """
         Initialize a Tetromino.
 
@@ -254,16 +292,16 @@ class Tetromino:
         self.y = 0
         self.config = config
 
-    def rotate_clockwise(self):
-        """Rotate the piece 90 degrees clockwise"""
+    def rotate_clockwise(self) -> None:
+        """Rotate piece 90 degrees clockwise by matrix transpose + reverse."""
         self.shape = [list(row) for row in zip(*self.shape[::-1])]
 
-    def rotate_counterclockwise(self):
-        """Rotate the piece 90 degrees counterclockwise"""
+    def rotate_counterclockwise(self) -> None:
+        """Rotate piece 90 degrees counterclockwise."""
         self.shape = [list(row) for row in zip(*self.shape)][::-1]
 
     def get_blocks(self) -> List[Tuple[int, int]]:
-        """Get list of block positions for this piece"""
+        """Return list of (x, y) grid coordinates occupied by this piece."""
         blocks = []
         for y, row in enumerate(self.shape):
             for x, cell in enumerate(row):
@@ -271,8 +309,8 @@ class Tetromino:
                     blocks.append((self.x + x, self.y + y))
         return blocks
 
-    def copy(self):
-        """Create a copy of this tetromino"""
+    def copy(self) -> "Tetromino":
+        """Create a separate copy of the piece, preserving orientation."""
         new_piece = Tetromino(self.type, self.config)
         new_piece.shape = [row[:] for row in self.shape]
         new_piece.x = self.x
@@ -281,9 +319,9 @@ class Tetromino:
 
 
 class TetrisGame:
-    """Main game class"""
+    """Manages grid, active piece, input, drawing and game state transitions."""
 
-    def __init__(self, config=None):
+    def __init__(self, config: Optional[type] = None) -> None:
         """
         Initialize the Tetris game.
 
@@ -337,11 +375,14 @@ class TetrisGame:
         self.spawn_new_piece()
 
     def get_random_piece(self) -> Tetromino:
-        """Get a random tetromino"""
+        """Return a random Tetromino instance."""
         return Tetromino(random.choice(list(self.config.SHAPES.keys())), self.config)
 
-    def spawn_new_piece(self):
-        """Spawn a new piece at the top"""
+    def spawn_new_piece(self) -> None:
+        """
+        Move next piece into play and create a new next piece.
+        Handles game over if spawn location is blocked.
+        """
         self.current_piece = self.next_piece
         self.next_piece = self.get_random_piece()
         self.can_hold = True
@@ -351,8 +392,16 @@ class TetrisGame:
             self.game_over = True
             self.state = GameOverState()
 
-    def is_valid_position(self, piece: Tetromino, offset_x=0, offset_y=0) -> bool:
-        """Check if a piece position is valid"""
+    def is_valid_position(self, piece: Tetromino, offset_x: int = 0, offset_y: int = 0) -> bool:
+        """
+        Check if piece can occupy position with given offset.
+        Args:
+        piece: Tetromino to test.
+        offset_x: Horizontal offset from current x.
+        offset_y: Vertical offset.
+        Returns:
+        True if all blocks are inside bounds and not colliding.
+        """
         for x, y in piece.get_blocks():
             new_x = x + offset_x
             new_y = y + offset_y
@@ -368,15 +417,22 @@ class TetrisGame:
         return True
 
     def move_piece(self, dx: int, dy: int) -> bool:
-        """Try to move the piece by dx, dy"""
+        """
+        Attempt to move the active piece.
+        Args:
+        dx: Horizontal movement.
+        dy: Vertical movement.
+        Returns:
+        True if movement succeeded, False otherwise.
+        """
         if self.is_valid_position(self.current_piece, dx, dy):
             self.current_piece.x += dx
             self.current_piece.y += dy
             return True
         return False
 
-    def rotate_piece(self):
-        """Try to rotate the piece with wall kicks"""
+    def rotate_piece(self) -> None:
+        """Attempt rotation with simple wall kicks."""
         original_shape = [row[:] for row in self.current_piece.shape]
         self.current_piece.rotate_clockwise()
 
@@ -391,8 +447,8 @@ class TetrisGame:
         # Rotation failed, restore original shape
         self.current_piece.shape = original_shape
 
-    def hard_drop(self):
-        """Drop the piece instantly to the bottom"""
+    def hard_drop(self) -> None:
+        """Drop piece instantly to floor, awarding bonus points."""
         drop_distance = 0
         while self.move_piece(0, 1):
             drop_distance += 1
@@ -401,14 +457,14 @@ class TetrisGame:
         self.lock_piece()
 
     def get_ghost_piece(self) -> Tetromino:
-        """Get the ghost piece showing where the current piece will land"""
+        """Return ghost copy showing landing position of current piece."""
         ghost = self.current_piece.copy()
         while self.is_valid_position(ghost, 0, 1):
             ghost.y += 1
         return ghost
 
-    def lock_piece(self):
-        """Lock the current piece into the grid"""
+    def lock_piece(self) -> None:
+        """Place piece permanently into grid and check for line clears."""
         for x, y in self.current_piece.get_blocks():
             if y >= 0:
                 self.grid[y][x] = self.current_piece.color
@@ -417,8 +473,14 @@ class TetrisGame:
         if not self.clearing_lines:
             self.spawn_new_piece()
 
-    def clear_lines(self):
-        """Clear completed lines and update score"""
+    def clear_lines(self) -> None:
+        """
+        Identify filled lines, start animation and update score and level.
+        Side effects:
+        Sets clearing_lines.
+        Updates score and level.
+        Switches state to LineClearingState if necessary.
+        """
         lines_to_clear = []
 
         for y in range(self.config.GRID_HEIGHT):
@@ -450,8 +512,8 @@ class TetrisGame:
             # Transition to line clearing state
             self.state = LineClearingState()
 
-    def finish_clearing_animation(self):
-        """Complete the line clearing animation and remove lines"""
+    def finish_clearing_animation(self) -> None:
+        """Remove cleared lines and shift grid downward after animation."""
         if self.clearing_lines:
             for y in reversed(self.clearing_lines):
                 del self.grid[y]
@@ -459,8 +521,8 @@ class TetrisGame:
             self.clearing_lines = []
             self.spawn_new_piece()
 
-    def hold_current_piece(self):
-        """Hold the current piece for later"""
+    def hold_current_piece(self) -> None:
+        """Swap current piece with hold piece if allowed."""
         if not self.can_hold:
             return
 
@@ -475,8 +537,8 @@ class TetrisGame:
 
         self.can_hold = False
 
-    def draw_grid(self):
-        """Draw the game grid"""
+    def draw_grid(self) -> None:
+        """Render grid background, lines, ghost, active piece and blocks."""
         # Draw background
         grid_rect = pygame.Rect(
             self.config.GRID_X,
@@ -553,8 +615,8 @@ class TetrisGame:
                 if y >= 0:
                     self.draw_block(x, y, self.current_piece.color)
 
-    def draw_block(self, x: int, y: int, color: Tuple[int, int, int]):
-        """Draw a single block"""
+    def draw_block(self, x: int, y: int, color: Tuple[int, int, int]) -> None:
+        """Draw one grid cell with shading effect."""
         rect = pygame.Rect(
             self.config.GRID_X + x * self.config.BLOCK_SIZE + 1,
             self.config.GRID_Y + y * self.config.BLOCK_SIZE + 1,
@@ -568,8 +630,8 @@ class TetrisGame:
         pygame.draw.line(self.screen, highlight, (rect.left, rect.top), (rect.right, rect.top), 2)
         pygame.draw.line(self.screen, highlight, (rect.left, rect.top), (rect.left, rect.bottom), 2)
 
-    def draw_piece_preview(self, piece: Tetromino, x: int, y: int, title: str):
-        """Draw a piece preview box"""
+    def draw_piece_preview(self, piece: Optional[Tetromino], x: int, y: int, title: str) -> None:
+        """Draw preview box for next or hold piece."""
         # Draw title
         title_text = self.small_font.render(title, True, self.config.WHITE)
         self.screen.blit(title_text, (x, y - 30))
@@ -595,8 +657,8 @@ class TetrisGame:
                         )
                         pygame.draw.rect(self.screen, piece.color, rect)
 
-    def draw_ui(self):
-        """Draw the user interface"""
+    def draw_ui(self) -> None:
+        """Draw score, level, lines, next and hold previews, and controls."""
         # Score
         score_text = self.font.render(f"Score: {self.score}", True, self.config.WHITE)
         self.screen.blit(score_text, (50, 100))
@@ -632,8 +694,8 @@ class TetrisGame:
             control_text = self.small_font.render(control, True, self.config.WHITE)
             self.screen.blit(control_text, (50, 400 + i * 30))
 
-    def reset_game(self):
-        """Reset the game to initial state"""
+    def reset_game(self) -> None:
+        """Reset grid, stats and pieces to initial state."""
         self.grid = [
             [None for _ in range(self.config.GRID_WIDTH)] for _ in range(self.config.GRID_HEIGHT)
         ]
@@ -650,20 +712,20 @@ class TetrisGame:
         self.state = PlayingState()
         self.spawn_new_piece()
 
-    def handle_input(self, event):
-        """Handle keyboard input"""
+    def handle_input(self, event: pygame.event.Event) -> None:
+        """Forward input to current state."""
         if event.type == pygame.KEYDOWN:
             self.state.handle_input(event, self)
 
-    def update(self, delta_time):
-        """Update game state"""
+    def update(self, delta_time: int) -> None:
+        """Update game logic if game is not over."""
         if self.game_over:
             return
 
         self.state.update(delta_time, self)
 
-    def draw(self):
-        """Draw everything"""
+    def draw(self) -> None:
+        """Render full frame including grid and UI."""
         self.screen.fill(self.config.BLACK)
         self.draw_grid()
         self.draw_ui()
@@ -673,8 +735,8 @@ class TetrisGame:
 
         pygame.display.flip()
 
-    def run(self):
-        """Main game loop"""
+    def run(self) -> None:
+        """Main loop handling events, updates and drawing."""
         running = True
 
         while running:
@@ -695,8 +757,8 @@ class TetrisGame:
         pygame.quit()
 
 
-def main():
-    """Main entry point for the game"""
+def main() -> None:
+    """Start game instance and begin event loop."""
     game = TetrisGame()
     game.run()
 

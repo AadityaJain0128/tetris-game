@@ -83,7 +83,7 @@ class TestTetrisGame:
         assert game.score == 0
         assert game.level == 1
         assert game.lines_cleared == 0
-        assert game.game_over == False
+        assert game.game_over is False
         assert len(game.grid) == GRID_HEIGHT
         assert len(game.grid[0]) == GRID_WIDTH
         assert game.current_piece is not None
@@ -133,7 +133,6 @@ class TestTetrisGame:
 
     def test_rotate_piece(self, game):
         """Test piece rotation"""
-        original_shape = [row[:] for row in game.current_piece.shape]
         game.rotate_piece()
         # Shape should change after rotation (unless it's O piece)
         if game.current_piece.type != "O":
@@ -190,7 +189,7 @@ class TestTetrisGame:
         assert game.hold_piece is not None
         assert game.hold_piece.type == original_type
         # Can't hold again immediately
-        assert game.can_hold == False
+        assert game.can_hold is False
 
     def test_ghost_toggle(self, game):
         """Test ghost piece toggle"""
@@ -213,7 +212,7 @@ class TestTetrisGame:
         assert game.score == 0
         assert game.level == 1
         assert game.lines_cleared == 0
-        assert game.game_over == False
+        assert game.game_over is False
         assert game.clearing_lines == []
 
     def test_grid_is_empty_initially(self, game):
